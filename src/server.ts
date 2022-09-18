@@ -1,9 +1,18 @@
 import express, { request } from "express";
-import{PrismaClient } from '@prisma/client'
+import cors from 'cors'
+
+import{PrismaClient } from '@prisma/client';
+import {convertHourStringToMinutes} from './utils/convert-hour-string-to-minutes'
+import { convertMinutesToHourString } from "./utils/convert-minutes-to-hour-string";
 
 const app = express()
-const prisma = new PrismaClient()
+app.use(express.json())
+app.use(cors())
+
+const prisma = new PrismaClient({
     log:['query']
+
+})
 app.get('/games',async (request, response)=>{
     const games = await prisma.game.findMany({
         include: {
@@ -19,10 +28,25 @@ app.get('/games',async (request, response)=>{
     return response.json(games);
 });
 
-app.post('./ads',(request, response)=>{
-    // const gameID = request.params.id;
+app.post('/games/churros', async (request, response)=>{
+    //const gameId = request.params.id;
+    const body= request.body;
+    console.log('body',body)
+//     const ad = await prisma.ad.create({
+//         data:{
+//             gameId:body.id,
+//             name: body.name,
+//             yearsPlaying: body.yearsPlaying,
+//             discord: body.discord,
+//             weekDays: body.weekDays.join(','),
+//             hourStart: convertHourStringToMinutes(body.hourStart),
+//             hourEnd: convertHourStringToMinutes(body.hourEnd),
+//             useVoiceChannel: body.useVoiceChannel
 
-    return response.json([]);
+//         }
+// })
+
+ return response.json({ok:true});  
 });
 
 app.get('/games/:id/ads', async (request,response)=> {
@@ -40,7 +64,7 @@ app.get('/games/:id/ads', async (request,response)=> {
         },
         
         where :{
-            gameId,
+            gameId: gameId,
         },
         orderBy:{
             createdAt: 'desc',
@@ -50,7 +74,9 @@ app.get('/games/:id/ads', async (request,response)=> {
     return response.json(ads.map(ad=>{
         return{
             ...ad,
-            weekDays: ad.weekDays.split(',')
+            weekDays: ad.weekDays.split(','),
+            hourStart: convertMinutesToHourString(ad.hourStart),
+            hourEnd:  convertMinutesToHourString(ad.hourEnd),
         }
      } ))
 })
